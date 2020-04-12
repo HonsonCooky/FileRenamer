@@ -7,9 +7,6 @@ import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.WindowEvent;
 import java.io.File;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -32,17 +29,18 @@ import javax.swing.JTextField;
 public class FileRanamer {
 
   final static JFileChooser jfc = new JFileChooser();
-  final static ExecutorService pool = Executors.newFixedThreadPool(1);
   static JFrame f;
   static JTextField t;
   static JRadioButton add, sub;
 
   static String keyOg;
-  static Pattern key;
   static File directory;
   static boolean addToName;
 
 
+  /**
+   * Starts the program by asking for a directory to edit.
+   */
   private static void start() {
     try {
       // ENSURE we only take directories
@@ -50,18 +48,27 @@ public class FileRanamer {
 
       // If the selected file is approved
       if (jfc.showDialog(new JPanel(), "Select Directory") == JFileChooser.APPROVE_OPTION) {
+        // Save the directory for later
         directory = jfc.getSelectedFile();
+        // Create the environment to ask for editing parameters.
         createTextEnvironment();
       }
     } catch (Exception e) {
+      // Tell the user there has been some issue with their file
       JOptionPane.showMessageDialog(null, "Unable to use directory:\n" + e.getMessage(), "Error",
           JOptionPane.ERROR_MESSAGE);
+      // Allow the user to try again executing elsewhere to end this process.
+      start();
     }
   }
 
 
+  /**
+   * Creates a JFrame where the user can edit their directory files by adding to all file names, or
+   * taking away something in all file names.
+   */
   private static void createTextEnvironment() {
-    // Get the size of the screen
+    // Get the size of the screen, and relevant sizes for panels
     Dimension fullScreenDim = Toolkit.getDefaultToolkit().getScreenSize();
     Dimension subScreenDim = new Dimension(fullScreenDim.width / 6, fullScreenDim.height / 6);
     Dimension subScreenDim1 = new Dimension(subScreenDim.width, subScreenDim.height / 3);
@@ -137,35 +144,33 @@ public class FileRanamer {
 
 
 
+    // Add the panels into the frame
     f.add(j1, BorderLayout.NORTH);
     f.add(j2, BorderLayout.SOUTH);
-
-
-    // visulaize the frame
     j1.setVisible(true);
     j2.setVisible(true);
     j1.revalidate();
     j2.revalidate();
+
+
+    // visulaize the frame
     f.setVisible(true);
     f.setLocationRelativeTo(null);
     f.pack();
     f.validate();
   }
 
+  /**
+   * Stores the text, and weather it is being added or subtracted from file names.
+   */
   static void storeText() {
-    try {
     addToName = add.isSelected();
     keyOg = t.getText();
-    key = Pattern.compile(".*" + t.getText() + ".*");
-    } catch (Exception e) {
-      f.dispatchEvent(new WindowEvent(f, WindowEvent.WINDOW_CLOSING));
-      JOptionPane.showMessageDialog(null,
-          "Unable to use regex:\n" + directory.getAbsolutePath(), "Error",
-          JOptionPane.ERROR_MESSAGE);
-      createTextEnvironment();
-    }
   }
 
+  /**
+   * Adds or subtracts from file names, then closes the program.
+   */
   static void runFileRenamer() {
     if (addToName) {
       addToFileNames();
@@ -177,6 +182,9 @@ public class FileRanamer {
 
 
 
+  /**
+   * Adds to the end of file names;
+   */
   private static void addToFileNames() {
     // For all the files in this location
     for (File f : directory.listFiles()) {
@@ -184,28 +192,44 @@ public class FileRanamer {
       if (!f.getAbsolutePath().contains(keyOg)) {
         String originalName = f.getAbsolutePath();
         int i = originalName.lastIndexOf('.');
+
+        // Split the name by name - extension
         String[] split =
             {originalName.substring(0, i), originalName.substring(i, originalName.length())};
+        // Add the strings together, name + key + extension
         f.renameTo(new File(split[0] + keyOg + split[1]));
       }
     }
   }
 
+  /**
+   * Subtracts all instances of key in file names
+   */
   private static void removeFromFileNames() {
     // For all the files in this location
     for (File f : directory.listFiles()) {
       // Edit file if it contains shortcut
-      if (key.matcher(f.getAbsolutePath()).matches()) {
+      if (f.getAbsolutePath().contains(keyOg)) {
         f.renameTo(new File(f.getAbsolutePath().replaceAll(keyOg, "")));
       }
     }
   }
 
+  /**
+   * Ask the user if they would like to go again, if so, go agian, else close the program.
+   */
   private static void closeRanamer() {
+    f.setVisible(false);
     JOptionPane.showMessageDialog(null,
         "Finished editing names in:\n" + directory.getAbsolutePath(), "Complete",
         JOptionPane.INFORMATION_MESSAGE);
-    f.dispatchEvent(new WindowEvent(f, WindowEvent.WINDOW_CLOSING));
+    if (JOptionPane.showOptionDialog(null, "Would you like to do another?", "Again?",
+        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, new String[] {"YES", "NO"},
+        1) == JOptionPane.YES_OPTION) {
+      start();
+    } else {
+      f.dispatchEvent(new WindowEvent(f, WindowEvent.WINDOW_CLOSING));
+    }
   }
 
 
