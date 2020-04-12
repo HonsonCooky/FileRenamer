@@ -36,7 +36,7 @@ public class FileRanamer {
   static String keyOg;
   static File directory;
   static boolean addToName;
-
+  static int filesAltered;
 
   /**
    * Starts the program by asking for a directory to edit.
@@ -186,6 +186,7 @@ public class FileRanamer {
    * Adds to the end of file names;
    */
   private static void addToFileNames() {
+    filesAltered = 0;
     // For all the files in this location
     for (File f : directory.listFiles()) {
       // Edit file if it contains shortcut
@@ -198,6 +199,7 @@ public class FileRanamer {
             {originalName.substring(0, i), originalName.substring(i, originalName.length())};
         // Add the strings together, name + key + extension
         f.renameTo(new File(split[0] + keyOg + split[1]));
+        filesAltered++;
       }
     }
   }
@@ -206,11 +208,13 @@ public class FileRanamer {
    * Subtracts all instances of key in file names
    */
   private static void removeFromFileNames() {
+    filesAltered = 0;
     // For all the files in this location
     for (File f : directory.listFiles()) {
       // Edit file if it contains shortcut
       if (f.getAbsolutePath().contains(keyOg)) {
         f.renameTo(new File(f.getAbsolutePath().replaceAll(keyOg, "")));
+        filesAltered++;
       }
     }
   }
@@ -221,7 +225,7 @@ public class FileRanamer {
   private static void closeRanamer() {
     f.setVisible(false);
     JOptionPane.showMessageDialog(null,
-        "Finished editing names in:\n" + directory.getAbsolutePath(), "Complete",
+        "Finished editing " + filesAltered + " file names in:\n" + directory.getAbsolutePath(), "Complete",
         JOptionPane.INFORMATION_MESSAGE);
     if (JOptionPane.showOptionDialog(null, "Would you like to do another?", "Again?",
         JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, new String[] {"YES", "NO"},
